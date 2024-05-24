@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  cron:
+    container_name: cron
+    restart: always
+    build:
+        context: .
+        dockerfile: Dockerfile
+        target: base
+    ports:
+        - "${PORT}:${PORT}"
+    volumes:
+      - ./src:/app/src
+    environment:
+      BASE_URL: http://localhost:1337
+      EMAIL: info@michalvarys.eu
+      PASSWORD: Admin123

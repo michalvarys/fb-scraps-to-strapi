@@ -1,0 +1,25 @@
+{
+  "name": "cron",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "fbgraph": "^1.4.4",
+    "finalhandler": "^1.2.0",
+    "form-data": "^4.0.0",
+    "node-fetch": "^3.3.2",
+    "node-json-db": "^2.3.0",
+    "puppeteer": "^22.9.0",
+    "serve-static": "^1.15.0"
+  }
+}
