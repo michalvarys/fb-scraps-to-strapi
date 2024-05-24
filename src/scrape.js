@@ -1,6 +1,6 @@
 
 import puppeteer from 'puppeteer';
-// import fs from 'fs'
+
 import { updateDatabase } from './extract.js';
 
 export const scrape = async () => {

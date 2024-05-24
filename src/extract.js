@@ -10,7 +10,7 @@ const EMAIL = process.env.EMAIL
 const PASSWORD = process.env.PASSWORD
 
 axios.defaults.baseURL = BASE_URL
-async function main() {
+async function login() {
     const response = await axios.post(`/admin/login`, {
         email: EMAIL,
         password: PASSWORD
@@ -58,7 +58,7 @@ async function uploadImage(url) {
 }
 
 export async function updateDatabase(posts) {
-    await main()
+    await login()
     for (const post of posts) {
         try {
             const fbPost = await axios.get(`/news/fb/${post.id}`)
