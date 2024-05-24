@@ -21,6 +21,8 @@ export const scrape = async () => {
             const url = response.url();
             if (url.includes('graphql')) {
                 body = await response.text()
+                // * Data are coming in text format, even though the object is in correct format, there are commas and brackets missing
+                // * let's fix that and push the data to the array
                 const data = JSON.parse(fixJsonText(body))
                 fetchData.push(data)
             }
@@ -29,17 +31,21 @@ export const scrape = async () => {
         }
     });
 
+    // Navigate to the page url
     await page.goto('https://www.facebook.com/www.uat.sk', { waitUntil: 'networkidle2' });
 
 
+    // Cookies dialog
     await page.evaluate(() => {
         document.querySelectorAll("[role=dialog]").item(1).querySelector("[role=button][aria-label] .xtvsq51").click()
     })
 
+    // login dialog
     await page.evaluate(() => {
         document.querySelectorAll("[role=dialog]").item(0).querySelector("[role=button][aria-label]").click()
     })
 
+    // Now the data start flowing through the GQL, lets scroll a bit to load more of it (FB infinite scrolling)
     await delay(1000)
     const scrollingCount = 7
     for (const i of [...Array(scrollingCount).keys()]) {
@@ -49,6 +55,7 @@ export const scrape = async () => {
         await delay(1000)
     }
 
+    // Prefetched data (first post and some page information) needs to be extracted from the DOM to have complete feed
     const initialData = await page.evaluate(() => {
         const allData = [];
         for (const el of document.querySelectorAll("script[type=\"application/json\"]").values()) {
@@ -71,9 +78,11 @@ export const scrape = async () => {
             ).flatMap(val => val.__bbox.result)
     })
 
+    // data from GraphQL requests merged with the prefetched data
     const allData = [...initialData, ...fetchData]
-    const postsRaw = []
 
+    // get posts raw data
+    const postsRaw = []
     allData.flat().forEach((d) => {
         const units = d?.data?.node?.timeline_list_feed_units || d?.data?.user?.timeline_list_feed_units
 
@@ -88,7 +97,7 @@ export const scrape = async () => {
     // fs.writeFileSync('./postsRaw.json', JSON.stringify(postsRaw, null, 2))
     // fs.writeFileSync('./allData.json', JSON.stringify(allData, null, 2))
 
-
+    // Serialize to required format 
     const posts = []
     postsRaw.flat().forEach((d) => {
         const text = d.message?.text || d.message?.story?.message?.text
@@ -111,8 +120,9 @@ export const scrape = async () => {
     })
 
     // fs.writeFileSync('./posts.json', JSON.stringify(posts, null, 2))
-
+    // Send posts to the database
     await updateDatabase(posts)
+
     await browser.close();
 }
 
