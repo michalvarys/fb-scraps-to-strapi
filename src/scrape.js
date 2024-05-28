@@ -27,7 +27,7 @@ async function getFacebookCookies(browser) {
         const login = JSON.parse(fs.readFileSync(loginDataPath, 'utf8'));
         const loginRequired = !login || (new Date() - new Date(login.loginDate)) > 3 * 24 * 60 * 60 * 1000;
 
-        if (!loginRequired) {
+        if (!loginRequired && login.cookies) {
             return login.cookies
         }
     } catch {
