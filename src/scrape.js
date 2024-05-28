@@ -136,7 +136,8 @@ export const scrape = async () => {
     })
 
     // data from GraphQL requests merged with the prefetched data
-    const allData = [...initialData, ...fetchData]
+    // reverse the array to push older posts first
+    const allData = [...initialData, ...fetchData].reverse()
 
     // get posts raw data
     const postsRaw = []
