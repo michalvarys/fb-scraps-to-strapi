@@ -67,6 +67,22 @@ async function getFacebookCookies(browser) {
     return cookies
 }
 
+function getPostData(allData) {
+    // get posts raw data
+    const postsRaw = []
+    allData.flat().forEach((d) => {
+        const units = d?.data?.node?.timeline_list_feed_units || d?.data?.user?.timeline_list_feed_units
+
+        units?.edges?.forEach((d) => {
+            const post = d.node?.comet_sections?.content?.story
+            if (post) {
+                postsRaw.push(post)
+            }
+        })
+    })
+    return postsRaw
+}
+
 export const scrape = async () => {
     const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
     const cookies = await getFacebookCookies(browser)
@@ -87,6 +103,7 @@ export const scrape = async () => {
             // Check if the response is a GraphQL response
             const url = response.url();
             if (url.includes('graphql')) {
+                console.log('Received GraphQL response');
                 body = await response.text()
                 // * Data are coming in text format, even though the object is in correct format, there are commas and brackets missing
                 // * let's fix that and push the data to the array
@@ -99,7 +116,7 @@ export const scrape = async () => {
     });
 
     // Navigate to the page url
-    await page.goto('https://www.facebook.com/www.uat.sk', { waitUntil: 'networkidle2', referrerPolicy: 'no-referrer' });
+    await page.goto('https://www.facebook.com/www.uat.sk', { waitUntil: 'networkidle2' });
 
 
     // Now the data start flowing through the GQL, lets scroll a bit to load more of it (FB infinite scrolling)
@@ -138,22 +155,11 @@ export const scrape = async () => {
     // data from GraphQL requests merged with the prefetched data
     // reverse the array to push older posts first
     const allData = [...initialData, ...fetchData].reverse()
-
     // get posts raw data
-    const postsRaw = []
-    allData.flat().forEach((d) => {
-        const units = d?.data?.node?.timeline_list_feed_units || d?.data?.user?.timeline_list_feed_units
+    const postsRaw = getPostData(allData)
 
-        units?.edges?.forEach((d) => {
-            const post = d.node?.comet_sections?.content?.story
-            if (post) {
-                postsRaw.push(post)
-            }
-        })
-    })
-
-    // fs.writeFileSync('./postsRaw.json', JSON.stringify(postsRaw, null, 2))
-    // fs.writeFileSync('./allData.json', JSON.stringify(allData, null, 2))
+    fs.writeFileSync('./postsRaw.json', JSON.stringify(postsRaw, null, 2))
+    fs.writeFileSync('./allData.json', JSON.stringify(allData, null, 2))
 
     // Serialize to required format 
     const posts = []
@@ -177,7 +183,7 @@ export const scrape = async () => {
         posts.push({ text, id, attachments, attachments_raw: d.attachments })
     })
 
-    // fs.writeFileSync('./posts.json', JSON.stringify(posts, null, 2))
+    fs.writeFileSync('./posts.json', JSON.stringify(posts, null, 2))
     // Send posts to the database
     await updateDatabase(posts)
 
@@ -200,4 +206,4 @@ function delay(time) {
     });
 }
 
-scrape()
+// scrape()
