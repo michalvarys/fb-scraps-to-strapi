@@ -2,10 +2,77 @@
 import puppeteer from 'puppeteer';
 
 import { updateDatabase } from './extract.js';
+import fs from 'fs'
+
+import dotenv from 'dotenv'
+dotenv.config();
+
+const EMAIL = process.env.FB_EMAIL
+const PASSWORD = process.env.FB_PASSWORD
+
+async function closeCookiesPopup(page) {
+    await page.evaluate(() => {
+        const dialogs = document.querySelectorAll("[role=dialog]")
+        const dialog = dialogs.item(1) || dialogs.item(0)
+        const btn = dialog?.querySelector("[role=button][aria-label] .xtvsq51")
+        btn?.click()
+    })
+}
+
+async function getFacebookCookies(browser) {
+    const loginDataPath = "cookies.json"
+
+    // Read cookies from file
+    try {
+        const login = JSON.parse(fs.readFileSync(loginDataPath, 'utf8'));
+        const loginRequired = !login || (new Date() - new Date(login.loginDate)) > 3 * 24 * 60 * 60 * 1000;
+
+        if (!loginRequired) {
+            return login.cookies
+        }
+    } catch {
+
+    }
+
+    // cookies expired or non-existent
+    const page = await browser.newPage();
+
+    // Go to Facebook login page
+    await page.goto('https://www.facebook.com/');
+
+    await page.waitForSelector('[role=dialog]')
+    await closeCookiesPopup(page)
+
+    // Enter credentials
+    await page.type('#email', EMAIL);
+    await page.type('#pass', PASSWORD);
+
+    // Click on login button
+    await page.evaluate(() => {
+        document.querySelector('button[name="login"]').click()
+    })
+
+    // Wait for navigation
+    await page.waitForNavigation();
+
+    const cookies = await page.cookies();
+
+    const loginData = {
+        cookies,
+        loginDate: new Date().toISOString()
+    };
+    // save cookies to the file
+    fs.writeFileSync('cookies.json', JSON.stringify(loginData, null, 2));
+
+    return cookies
+}
 
 export const scrape = async () => {
     const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
+    const cookies = await getFacebookCookies(browser)
+
     const page = await browser.newPage();
+    await page.setCookie(...cookies);
 
     await page.setRequestInterception(true);
     page.on('request', request => {
@@ -32,18 +99,8 @@ export const scrape = async () => {
     });
 
     // Navigate to the page url
-    await page.goto('https://www.facebook.com/www.uat.sk', { waitUntil: 'networkidle2' });
+    await page.goto('https://www.facebook.com/www.uat.sk', { waitUntil: 'networkidle2', referrerPolicy: 'no-referrer' });
 
-
-    // Cookies dialog
-    await page.evaluate(() => {
-        document.querySelectorAll("[role=dialog]").item(1).querySelector("[role=button][aria-label] .xtvsq51").click()
-    })
-
-    // login dialog
-    await page.evaluate(() => {
-        document.querySelectorAll("[role=dialog]").item(0).querySelector("[role=button][aria-label]").click()
-    })
 
     // Now the data start flowing through the GQL, lets scroll a bit to load more of it (FB infinite scrolling)
     await delay(1000)
@@ -141,3 +198,5 @@ function delay(time) {
         setTimeout(resolve, time);
     });
 }
+
+scrape()
