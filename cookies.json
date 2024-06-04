@@ -2,40 +2,12 @@
   "cookies": [
     {
       "name": "xs",
-      "value": "30%3ADvoJIh_v2HmySQ%3A2%3A1717091437%3A-1%3A8911%3A%3AAcVhPXm5MDyQ7Bomqjds2I0zmwzNtWPJhDKzFq3wiAup",
+      "value": "30%3ADvoJIh_v2HmySQ%3A2%3A1717091437%3A-1%3A8911%3A%3AAcWp5k2HxFnoxjQUWWZRIuA2mHuNSDchJh6y567awofS",
       "domain": ".facebook.com",
       "path": "/",
-      "expires": 1749034867.818153,
+      "expires": 1749045219.421401,
       "size": 100,
       "httpOnly": true,
-      "secure": true,
-      "session": false,
-      "priority": "Medium",
-      "sameParty": false,
-      "sourceScheme": "Secure"
-    },
-    {
-      "name": "presence",
-      "value": "C%7B%22t3%22%3A%5B%5D%2C%22utc3%22%3A1717498869273%2C%22v%22%3A1%7D",
-      "domain": ".facebook.com",
-      "path": "/",
-      "expires": -1,
-      "size": 75,
-      "httpOnly": false,
-      "secure": true,
-      "session": true,
-      "priority": "Medium",
-      "sameParty": false,
-      "sourceScheme": "Secure"
-    },
-    {
-      "name": "wd",
-      "value": "1050x865",
-      "domain": ".facebook.com",
-      "path": "/",
-      "expires": 1718103666,
-      "size": 10,
-      "httpOnly": false,
       "secure": true,
       "session": false,
       "sameSite": "None",
@@ -62,11 +34,12 @@
       "value": "100009300537387",
       "domain": ".facebook.com",
       "path": "/",
-      "expires": 1749034867.817995,
+      "expires": 1749045219.421329,
       "size": 21,
       "httpOnly": false,
       "secure": true,
       "session": false,
+      "sameSite": "None",
       "priority": "Medium",
       "sameParty": false,
       "sourceScheme": "Secure"
@@ -112,7 +85,36 @@
       "priority": "Medium",
       "sameParty": false,
       "sourceScheme": "Secure"
+    },
+    {
+      "name": "presence",
+      "value": "C%7B%22t3%22%3A%5B%5D%2C%22utc3%22%3A1717509212647%2C%22v%22%3A1%7D",
+      "domain": ".facebook.com",
+      "path": "/",
+      "expires": -1,
+      "size": 75,
+      "httpOnly": false,
+      "secure": true,
+      "session": true,
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
+    },
+    {
+      "name": "wd",
+      "value": "901x848",
+      "domain": ".facebook.com",
+      "path": "/",
+      "expires": 1718114012,
+      "size": 9,
+      "httpOnly": false,
+      "secure": true,
+      "session": false,
+      "sameSite": "None",
+      "priority": "Medium",
+      "sameParty": false,
+      "sourceScheme": "Secure"
     }
   ],
-  "loginDate": "2024-06-04T11:02:00.079Z"
+  "loginDate": "2024-06-04T13:54:07.222Z"
 }

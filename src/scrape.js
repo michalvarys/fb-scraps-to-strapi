@@ -237,10 +237,11 @@ export async function scrape(browser, forceLogin = false) {
     fs.writeFileSync('./public/allData.json', JSON.stringify(allData, null, 2))
     fs.writeFileSync('./public/posts.json', JSON.stringify(posts, null, 2))
     fs.writeFileSync('./public/params.json', JSON.stringify(params, null, 2))
-    // Send posts to the database in reverse so that the order is from oldest to newest (posts are loaded from newest to oldest)
 
+    // Store last cookies to not to make the activity suspicious
     storeCookies(await page.cookies())
 
+    // Send posts to the database in reverse so that the order is from oldest to newest (posts are loaded from newest to oldest)
     await updateDatabase(posts.reverse())
     await browser.close();
     return posts

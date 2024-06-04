@@ -4,7 +4,6 @@ import axios from 'axios'
 import dotenv from 'dotenv'
 dotenv.config();
 
-// TODO replace with env variables
 const BASE_URL = process.env.BASE_URL || "http://localhost:1337";
 const EMAIL = process.env.EMAIL
 const PASSWORD = process.env.PASSWORD
@@ -50,11 +49,11 @@ async function uploadImage(url) {
         headers: form.getHeaders(),
     })
 
-    if (!response.ok) {
+    if (response.status !== 200) {
         return
     }
 
-    return response.json()
+    return response.data;
 }
 
 export async function updateDatabase(posts) {
@@ -76,6 +75,8 @@ export async function updateDatabase(posts) {
                 fullsize: image,
                 thumbnail_410x551: image
             }))
+
+            console.log(gallery_item)
 
             const sections = [
                 {
@@ -101,8 +102,8 @@ export async function updateDatabase(posts) {
                 sections
             })
 
+            console.log(data)
             if (data.error) {
-                console.log(data)
             }
         }
     }
