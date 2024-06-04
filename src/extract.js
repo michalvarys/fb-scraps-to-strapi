@@ -76,8 +76,6 @@ export async function updateDatabase(posts) {
                 thumbnail_410x551: image
             }))
 
-            console.log(gallery_item)
-
             const sections = [
                 {
                     content: post.text.split('\n').map(e => `<p>${e}</p>`).join(''),
@@ -102,8 +100,8 @@ export async function updateDatabase(posts) {
                 sections
             })
 
-            console.log(data)
             if (data.error) {
+                console.log(data)
             }
         }
     }
