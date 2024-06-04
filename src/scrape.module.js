@@ -1,63 +1,44 @@
 
-import puppeteer from 'puppeteer';
+const puppeteer = require('puppeteer')
 
-import { updateDatabase } from './extract.js';
-import fs from 'fs'
+// const { updateDatabase } = require('./extract.js')
+const fs = require('fs')
 
-import dotenv from 'dotenv'
-dotenv.config();
-
-const EMAIL = process.env.FB_EMAIL
-const PASSWORD = process.env.FB_PASSWORD
+const EMAIL = process.env.FB_EMAIL || "sufursky@gmail.com"
+const PASSWORD = process.env.FB_PASSWORD || "1044884559"
 
 async function closeCookiesPopup(page) {
     await page.evaluate(() => {
-        const dialogs = document.querySelectorAll("[role=dialog]")
+        const dialogs = cument.querySelectorAll("[role=dialog]")
         const dialog = dialogs.item(1) || dialogs.item(0)
         const btn = dialog?.querySelector("[role=button][aria-label] .xtvsq51")
         btn?.click()
     })
 }
 
-function storeCookies(cookies) {
-    const loginData = {
-        cookies,
-        loginDate: new Date().toISOString()
-    };
-    // save cookies to the file
-    fs.writeFileSync('cookies.json', JSON.stringify(loginData, null, 2));
-}
-
-async function getFacebookCookies(browser, forceLogin = false) {
+async function getFacebookCookies(browser) {
     const loginDataPath = "cookies.json"
 
     // Read cookies from file
     try {
         const login = JSON.parse(fs.readFileSync(loginDataPath, 'utf8'));
-        const hasUser = login.cookies.some(a => a.name === 'c_user')
         const loginRequired = !login || (new Date() - new Date(login.loginDate)) > 3 * 24 * 60 * 60 * 1000;
 
-        if (!loginRequired && login.cookies && login.loginDate && hasUser && !forceLogin) {
+        if (!loginRequired && login.cookies) {
             return login.cookies
         }
     } catch {
 
     }
 
-    /** @type {import('puppeteer').Page} */
     // cookies expired or non-existent
     const page = await browser.newPage();
-    await page.setExtraHTTPHeaders({
-        'User-Agent': 'Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:64.0) Gecko/20100101 Firefox/64.0'
-    })
 
     // Go to Facebook login page
     await page.goto('https://www.facebook.com/');
 
-    try {
-        await page.waitForSelector('[role=dialog]')
-        await closeCookiesPopup(page)
-    } catch { }
+    await page.waitForSelector('[role=dialog]')
+    await closeCookiesPopup(page)
 
     // Enter credentials
     await page.type('#email', EMAIL);
@@ -72,7 +53,14 @@ async function getFacebookCookies(browser, forceLogin = false) {
     await page.waitForNavigation();
 
     const cookies = await page.cookies();
-    storeCookies(cookies)
+
+    const loginData = {
+        cookies,
+        loginDate: new Date().toISOString()
+    };
+    // save cookies to the file
+    fs.writeFileSync('cookies.json', JSON.stringify(loginData, null, 2));
+
     return cookies
 }
 
@@ -111,38 +99,26 @@ function getPostData(allData) {
     }).filter(Boolean)
 }
 
-export async function scrape(browser, forceLogin = false) {
-    if (!browser) {
-        browser = await puppeteer.launch({
-            headless: false,
-            defaultViewport: null,
-            args: ['--no-sandbox', '--font-render-hinting=none', "--disable-setuid-sandbox", "--unlimited-storage"],
-            // executablePath: process.env.PUPPETEER_EXEC_PATH || "google-chrome-stable",
-            ignoreHTTPSErrors: true,
-            dumpio: false,
-            executablePath: "/opt/google/chrome/google-chrome",//"/usr/bin/google-chrome-stable",
-        });
-    }
+async function scrape() {
+    const browser = await puppeteer.launch({
+        headless: false,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--font-render-hinting=none'],
+        // executablePath: process.env.PUPPETEER_EXEC_PATH || "google-chrome-stable",
+        ignoreHTTPSErrors: true,
+        dumpio: false,
+        env: {
+            DISPLAY: ":99.0",
+        }
+    });
 
-    const cookies = await getFacebookCookies(browser, forceLogin)
+    const cookies = await getFacebookCookies(browser)
 
-    /** @type {import('puppeteer').Page} */
     const page = await browser.newPage();
     await page.setCookie(...cookies);
-    await page.setCacheEnabled(true)
-    await page.setExtraHTTPHeaders({
-        'User-Agent': 'Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:64.0) Gecko/20100101 Firefox/64.0'
-    })
 
     await page.setRequestInterception(true);
-    const params = []
     page.on('request', request => {
         // Continue with the request
-        const url = request.url()
-        if (url.includes('graphql')) {
-            params.push(request.postData())
-
-        }
         request.continue();
     });
 
@@ -157,7 +133,7 @@ export async function scrape(browser, forceLogin = false) {
                 // * Data are coming in text format, even though the object is in correct format, there are commas and brackets missing
                 // * let's fix that and push the data to the array
                 const data = JSON.parse(fixJsonText(body))
-                // console.log(getPostData(data))
+                console.log(getPostData(data))
                 fetchData.push(data)
             }
         } catch (error) {
@@ -168,21 +144,16 @@ export async function scrape(browser, forceLogin = false) {
     // Navigate to the page url
     await page.goto('https://www.facebook.com/www.uat.sk', { waitUntil: 'networkidle2' });
 
+
     const htmlBefore = await page.evaluate(() => {
         return document.head.outerHTML + document.body.outerHTML
     })
 
-    fs.writeFileSync('./public/page-before.html', htmlBefore)
+    fs.writeFileSync('./page-before.html', htmlBefore)
 
     await page.evaluate(() => {
-        document.querySelector("[role=dialog] [role=button][aria-label]")?.click()
-        // document.querySelectorAll("[role=dialog] [role=button][aria-label]")?.forEach(b => b.click())
+        document.querySelectorAll("[role=dialog] [role=button][aria-label]")?.forEach(b => b.click())
     })
-
-    const hasLogin = await page.evaluate(() => !!document.querySelector("#login_form"))
-    if (hasLogin && !forceLogin) {
-        return scrape(browser, true)
-    }
 
     // Now the data start flowing through the GQL, lets scroll a bit to load more of it (FB infinite scrolling)
     await delay(1000)
@@ -194,19 +165,11 @@ export async function scrape(browser, forceLogin = false) {
         await delay(3000)
     }
 
-    // const hasDialog = await page.evaluate(() => {
-    //     return !!document.querySelector("[role=dialog] [role=button][aria-label]")
-    // })
-
-    // if (hasDialog && !forceLogin) {
-    //     return scrape(browser, true)
-    // }
-
     const html = await page.evaluate(() => {
         return document.head.outerHTML + document.body.outerHTML
     })
 
-    fs.writeFileSync('./public/page.html', html)
+    fs.writeFileSync('./page.html', html)
     // Prefetched data (first post and some page information) needs to be extracted from the DOM to have complete feed
     const initialData = await page.evaluate(() => {
         const allData = [];
@@ -234,16 +197,13 @@ export async function scrape(browser, forceLogin = false) {
     const allData = [...initialData, ...fetchData]
     // get posts raw data
     const posts = getPostData(allData)
-    fs.writeFileSync('./public/allData.json', JSON.stringify(allData, null, 2))
-    fs.writeFileSync('./public/posts.json', JSON.stringify(posts, null, 2))
-    fs.writeFileSync('./public/params.json', JSON.stringify(params, null, 2))
+    fs.writeFileSync('./allData.json', JSON.stringify(allData, null, 2))
+    fs.writeFileSync('./posts.json', JSON.stringify(posts, null, 2))
     // Send posts to the database in reverse so that the order is from oldest to newest (posts are loaded from newest to oldest)
+    console.log(posts)
+    // await updateDatabase(posts.reverse())
 
-    storeCookies(await page.cookies())
-
-    await updateDatabase(posts.reverse())
     await browser.close();
-    return posts
 }
 
 function fixJsonText(brokenJsonText) {
@@ -262,4 +222,4 @@ function delay(time) {
     });
 }
 
-// scrape()
+scrape()

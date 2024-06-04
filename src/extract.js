@@ -69,7 +69,8 @@ export async function updateDatabase(posts) {
         }
 
         catch {
-            const images = await Promise.all(post.attachments.map(a => uploadImage(a?.viewer_image?.uri || a?.large_share_image?.uri)))
+            const links = post.attachments.map(a => a?.viewer_image?.uri || a?.large_share_image?.uri || a?.photo_image?.uri)
+            const images = await Promise.all(links.map(uploadImage))
 
             const gallery_item = images.filter(Boolean).map(image => ({
                 fullsize: image,
